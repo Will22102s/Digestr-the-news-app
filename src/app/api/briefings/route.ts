@@ -1,10 +1,8 @@
 import type { NextRequest } from "next/server";
-import { count, desc, eq, type SQL } from "drizzle-orm";
-import { db } from "@/db";
-import { briefings } from "@/db/schema";
 import { normalizeCategoryFilter } from "@/lib/categories";
 import { AppError } from "@/lib/errors";
 import { errorResponse, ok, readInteger } from "@/lib/http";
+import { listBriefings } from "@/lib/server-queries";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,32 +31,13 @@ export async function GET(request: NextRequest) {
       field: "offset",
     });
 
-    const conditions: SQL[] = [];
-    if (category !== "ALL") {
-      conditions.push(eq(briefings.categorySlug, category));
-    }
-
-    const whereClause = conditions.length > 0 ? conditions[0] : undefined;
-
-    const rows = await db
-      .select()
-      .from(briefings)
-      .where(whereClause)
-      .orderBy(desc(briefings.createdAt), desc(briefings.id))
-      .limit(limit)
-      .offset(offset);
-
-    const [totalRow] = await db
-      .select({ value: count() })
-      .from(briefings)
-      .where(whereClause);
-
-    return ok({
-      briefings: rows,
-      total: Number(totalRow?.value ?? 0),
+    const { briefings, total } = await listBriefings({
+      category,
       limit,
       offset,
     });
+
+    return ok({ briefings, total, limit, offset });
   } catch (error) {
     return errorResponse(error);
   }

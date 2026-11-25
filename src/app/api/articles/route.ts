@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
-import { and, count, desc, eq, like, or, type SQL } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { articles, categories, feeds } from "@/db/schema";
+import { articles } from "@/db/schema";
 import { normalizeCategoryFilter } from "@/lib/categories";
 import { AppError } from "@/lib/errors";
 import {
@@ -12,6 +12,7 @@ import {
   readJsonObject,
   readString,
 } from "@/lib/http";
+import { listArticles } from "@/lib/server-queries";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,57 +46,13 @@ export async function GET(request: NextRequest) {
       field: "offset",
     });
 
-    const conditions: SQL[] = [];
-
-    if (category !== "ALL") {
-      conditions.push(eq(categories.slug, category));
-    }
-    if (bookmarked !== undefined) {
-      conditions.push(eq(articles.isBookmarked, bookmarked));
-    }
-    if (search) {
-      const term = `%${search}%`;
-      const searchClause = or(
-        like(articles.title, term),
-        like(articles.snippet, term),
-      );
-      if (searchClause) conditions.push(searchClause);
-    }
-
-    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-    const rows = await db
-      .select({
-        id: articles.id,
-        title: articles.title,
-        url: articles.url,
-        snippet: articles.snippet,
-        publishedAt: articles.publishedAt,
-        isBookmarked: articles.isBookmarked,
-        createdAt: articles.createdAt,
-        feedId: feeds.id,
-        feedName: feeds.name,
-        sourceType: feeds.sourceType,
-        categorySlug: categories.slug,
-        categoryName: categories.name,
-        categoryColor: categories.color,
-      })
-      .from(articles)
-      .innerJoin(feeds, eq(articles.feedId, feeds.id))
-      .innerJoin(categories, eq(articles.categoryId, categories.id))
-      .where(whereClause)
-      .orderBy(desc(articles.publishedAt), desc(articles.id))
-      .limit(limit)
-      .offset(offset);
-
-    const [totalRow] = await db
-      .select({ value: count() })
-      .from(articles)
-      .innerJoin(feeds, eq(articles.feedId, feeds.id))
-      .innerJoin(categories, eq(articles.categoryId, categories.id))
-      .where(whereClause);
-
-    const total = Number(totalRow?.value ?? 0);
+    const { articles: rows, total } = await listArticles({
+      category,
+      bookmarked,
+      search,
+      limit,
+      offset,
+    });
 
     return ok({
       articles: rows,

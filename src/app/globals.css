@@ -117,3 +117,240 @@
 *::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.24);
 }
+
+/* ---------------------------------------------------------------------------
+   Motion
+   ------------------------------------------------------------------------- */
+
+@keyframes digest-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes digest-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes digest-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes digest-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@layer utilities {
+  .animate-rise {
+    animation: digest-rise 0.42s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+
+  .animate-fade {
+    animation: digest-fade 0.25s ease-out both;
+  }
+
+  .animate-slide-in {
+    animation: digest-slide-in 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+
+  .skeleton {
+    background-color: rgba(255, 255, 255, 0.03);
+    background-image: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.035) 0%,
+      rgba(255, 255, 255, 0.09) 50%,
+      rgba(255, 255, 255, 0.035) 100%
+    );
+    background-size: 200% 100%;
+    animation: digest-shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Editorial prose (Gemini briefings)
+   ------------------------------------------------------------------------- */
+
+@layer components {
+  .editorial-prose {
+    font-family: var(--font-serif);
+    font-size: 17px;
+    line-height: 1.72;
+    letter-spacing: -0.003em;
+    color: #d6d6dc;
+    text-wrap: pretty;
+  }
+
+  .editorial-prose > * + * {
+    margin-top: 1.15em;
+  }
+
+  .editorial-prose p {
+    margin: 0;
+  }
+
+  .editorial-prose > p:first-of-type {
+    font-size: 18.5px;
+    line-height: 1.65;
+    color: #ececf1;
+  }
+
+  .editorial-prose h2 {
+    margin-top: 2.5em;
+    margin-bottom: 0.85em;
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-secondary);
+  }
+
+  .editorial-prose h3 {
+    margin-top: 2em;
+    margin-bottom: 0.6em;
+    font-family: var(--font-sans);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+  }
+
+  .editorial-prose a {
+    color: #8cc4ff;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(140, 196, 255, 0.28);
+    transition:
+      color 140ms ease,
+      border-color 140ms ease;
+  }
+
+  .editorial-prose a:hover {
+    color: #b6d9ff;
+    border-color: rgba(182, 217, 255, 0.55);
+  }
+
+  .editorial-prose strong {
+    color: #f2f2f5;
+    font-weight: 600;
+  }
+
+  .editorial-prose em {
+    color: #e4e4ea;
+  }
+
+  .editorial-prose blockquote {
+    margin: 1.6em 0;
+    border-left: 2px solid rgba(10, 132, 255, 0.5);
+    padding-left: 1.15em;
+    color: var(--color-ink-secondary);
+    font-style: italic;
+  }
+
+  .editorial-prose ul,
+  .editorial-prose ol {
+    padding-left: 1.3em;
+  }
+
+  .editorial-prose ul {
+    list-style: disc;
+  }
+
+  .editorial-prose ol {
+    list-style: decimal;
+  }
+
+  .editorial-prose li {
+    margin-top: 0.4em;
+    padding-left: 0.15em;
+  }
+
+  .editorial-prose li::marker {
+    color: var(--color-ink-tertiary);
+  }
+
+  .editorial-prose code {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--color-hairline);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+    color: #e8e8ed;
+  }
+
+  .editorial-prose pre {
+    margin: 1.6em 0;
+    overflow-x: auto;
+    border: 1px solid var(--color-hairline);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.28);
+    padding: 1em 1.15em;
+  }
+
+  .editorial-prose pre code {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font-size: 12px;
+    line-height: 1.65;
+  }
+
+  .editorial-prose hr {
+    margin: 2.4em 0;
+    border: 0;
+    border-top: 1px solid var(--color-hairline);
+  }
+
+  .editorial-prose table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+  }
+
+  .editorial-prose th,
+  .editorial-prose td {
+    border: 1px solid var(--color-hairline);
+    padding: 0.5em 0.6em;
+    text-align: left;
+  }
+
+  .editorial-prose th {
+    color: var(--color-ink-secondary);
+    font-weight: 600;
+  }
+
+  .editorial-prose img {
+    display: none;
+  }
+
+  .editorial-prose > :first-child {
+    margin-top: 0;
+  }
+
+  .editorial-prose > :last-child {
+    margin-bottom: 0;
+  }
+}

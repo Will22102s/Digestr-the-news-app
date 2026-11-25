@@ -4,9 +4,9 @@ A minimalist, Apple-style daily reader for **Artificial Intelligence** and
 **Cybersecurity** news. Browse a live feed of headlines, or ask the editor to
 synthesize the day into one calm, cited briefing.
 
-> **Status:** Step 2 — RSS ingestion, cross-feed deduplication, OPML, and the
-> Gemini editorial engine with a complete JSON API. The three-column reader UI
-> lands next.
+> **Status:** Step 3 — the full reader is live: a three-column Apple-style
+> interface over RSS ingestion, cross-feed deduplication, OPML import/export,
+> and the Gemini editorial engine.
 
 ## Stack
 
@@ -17,7 +17,7 @@ synthesize the day into one calm, cited briefing.
 | Database | SQLite via `better-sqlite3` + Drizzle ORM |
 | Ingestion | `rss-parser` + `p-limit` |
 | AI | Google Gemini (`gemini-3.8-flash`) via `@google/genai` |
-| Reading | `react-markdown` + `remark-gfm` (Step 3) |
+| Reading | `react-markdown` + `remark-gfm` |
 | OPML | `fast-xml-parser` |
 
 ## Quick start
@@ -29,8 +29,24 @@ npm run db:setup               # apply migrations + seed 2 categories & 28 sourc
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The setup screen confirms
-that SQLite, the schema, and the seed data are ready.
+Open [http://localhost:3000](http://localhost:3000). The page server-renders the
+latest articles and briefings, so a fresh database shows a guided setup state
+instead of an empty shell.
+
+## The interface
+
+- **Sidebar** — desks (`All`, `AI`, `Cybersecurity`), saved stories, live
+  counters, sync, and the sources manager. On narrow screens it becomes a
+  drawer.
+- **Feed panel** — Today's Read when a briefing exists, otherwise the live feed.
+  Search, category filters, bookmarks, and cursor-free pagination via
+  `limit`/`offset`.
+- **Reader panel** — distraction-free article view or the rendered briefing with
+  inline `[Source](url)` citations, read time, and generation errors surfaced as
+  an inline banner plus a toast.
+
+Optimistic bookmarks make saving instant, and the layout collapses to one panel
+at a time below the `lg` breakpoint.
 
 ### Load today's news
 
@@ -81,23 +97,37 @@ src/
 │   │   ├── articles/              # Browse, search, bookmark
 │   │   ├── briefings/             # Latest briefing + generate
 │   │   ├── feeds/sync/            # RSS ingestion (POST + cron GET)
-│   │   └── sources/               # Source CRUD + OPML import/export
+│   │   ├── sources/               # Source CRUD + OPML import/export
+│   │   └── stats/                 # Sidebar counters
 │   ├── globals.css                # Obsidian surfaces, frosted glass, type tokens
 │   ├── layout.tsx                 # Root shell, metadata, dark theme
-│   └── page.tsx                   # Step 2 setup screen
+│   └── page.tsx                   # Server-rendered initial digest
+├── components/
+│   ├── DigestApp.tsx              # Client orchestrator: fetch, sync, bookmarks
+│   ├── Sidebar.tsx                # Desks, counters, sync, mobile drawer
+│   ├── FeedPanel.tsx              # Briefing/feed list, search, pagination
+│   ├── ReaderPanel.tsx            # Article and briefing reader
+│   ├── ManageSourcesModal.tsx     # Add, validate, toggle, delete, OPML
+│   └── Markdown.tsx               # GFM rendering with safe external links
 ├── db/
 │   ├── index.ts                   # SQLite connection (WAL, FKs, dev singleton)
 │   ├── schema.ts                  # categories · feeds · articles · briefings
 │   └── seed.ts                    # Idempotent seed with 28 curated sources
+├── hooks/
+│   └── useDebouncedValue.ts       # Debounced search input
 └── lib/
     ├── briefing.ts                # Story selection, prompt, Gemini, citations
     ├── categories.ts              # Shared slugs, labels, category metadata
+    ├── client-api.ts              # Typed browser fetch wrapper
     ├── dedupe.ts                  # Title tokenization + near-duplicate removal
     ├── errors.ts                  # Typed application errors
+    ├── format.ts                  # Relative time, read time, host labels
     ├── http.ts                    # JSON validation, auth, error envelopes
     ├── opml.ts                    # OPML 2.0 build/parse
     ├── rss.ts                     # Fetch, normalize, dedupe, batch upsert
+    ├── server-queries.ts          # Shared list/stats queries for SSR + API
     ├── text.ts                    # HTML cleanup, read time, XML escaping
+    ├── types.ts                   # API DTOs shared by client and server
     └── url.ts                     # URL canonicalization
 drizzle/                           # Committed SQL migrations
 data/                              # Local SQLite database (gitignored)
@@ -128,6 +158,7 @@ data/                              # Local SQLite database (gitignored)
 | `DELETE` | `/api/sources?id=` | Remove a source and its articles |
 | `GET` | `/api/sources/opml` | Export all sources as OPML |
 | `POST` | `/api/sources/opml` | Import an OPML file (multipart `file` or raw XML) |
+| `GET` | `/api/stats` | Article, source, bookmark, and briefing counters |
 
 Errors use a stable envelope:
 
@@ -171,5 +202,5 @@ Security.
 
 - [x] **Step 1** — scaffold, schema, migrations, seed
 - [x] **Step 2** — RSS sync engine, deduplicator, Gemini briefing API
-- [ ] **Step 3** — three-column Apple-style reader, sources manager UI, OPML controls
+- [x] **Step 3** — three-column Apple-style reader, sources manager UI, OPML controls
 - [ ] **Step 4** — polished README, screenshots, deploy notes
