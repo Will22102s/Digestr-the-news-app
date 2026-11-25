@@ -48,6 +48,20 @@ instead of an empty shell.
 Optimistic bookmarks make saving instant, and the layout collapses to one panel
 at a time below the `lg` breakpoint.
 
+## Screenshots
+
+**Reader** — search across 659 stories, then read without leaving the page.
+
+![Three-column reader showing the live feed and an article](docs/screenshots/reader.png)
+
+**Sources** — add, validate, toggle, and move your feed list in and out with OPML.
+
+![Manage sources modal with feed toggles and OPML controls](docs/screenshots/sources.png)
+
+**Mobile** — one panel at a time, with navigation in a drawer.
+
+<img src="docs/screenshots/mobile.png" alt="Mobile live feed" width="320" />
+
 ### Load today's news
 
 ```bash
@@ -198,9 +212,43 @@ Security.
 | `CRON_SECRET` | No | Optional protection for ingestion/synthesis endpoints |
 | `SYNC_CONCURRENCY` | No | Parallel feed fetches, default `8` (max 50) |
 
+## Deploying
+
+The app is a single Node process plus a SQLite file, so it wants a host with a
+persistent disk. Vercel's serverless filesystem is ephemeral and read-only at
+runtime — the database would reset on every deploy.
+
+1. Provision a host that keeps a volume (Fly.io, Railway, Render with a disk, or
+   a small VPS) and mount it at `/data`.
+2. Set `DATABASE_URL=/data/digest.db`, `GEMINI_API_KEY`, and optionally
+   `CRON_SECRET`.
+3. Build and start:
+
+   ```bash
+   npm ci
+   npm run db:setup
+   npm run build
+   npm run start
+   ```
+
+4. Schedule ingestion and synthesis. With `CRON_SECRET` set, include it as a
+   bearer token:
+
+   ```bash
+   curl -X POST https://your-host/api/feeds/sync \
+     -H "authorization: Bearer $CRON_SECRET"
+   curl -X POST https://your-host/api/briefings/generate \
+     -H "authorization: Bearer $CRON_SECRET" \
+     -H 'content-type: application/json' \
+     -d '{"categorySlug":"ALL"}'
+   ```
+
+Run sync on a 30–60 minute cadence and generate once each morning. Back up the
+SQLite file (or its volume snapshot) if you care about bookmarks.
+
 ## Roadmap
 
 - [x] **Step 1** — scaffold, schema, migrations, seed
 - [x] **Step 2** — RSS sync engine, deduplicator, Gemini briefing API
 - [x] **Step 3** — three-column Apple-style reader, sources manager UI, OPML controls
-- [ ] **Step 4** — polished README, screenshots, deploy notes
+- [x] **Step 4** — polished README, screenshots, deploy notes
