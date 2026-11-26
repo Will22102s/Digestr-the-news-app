@@ -4,9 +4,10 @@ A minimalist, Apple-style daily reader for **Artificial Intelligence** and
 **Cybersecurity** news. Browse a live feed of headlines, or ask the editor to
 synthesize the day into one calm, cited briefing.
 
-> **Status:** Step 3 — the full reader is live: a three-column Apple-style
-> interface over RSS ingestion, cross-feed deduplication, OPML import/export,
-> and the Gemini editorial engine.
+> **Status:** Step 5 — the full reader also ships as a native desktop app.
+> Tauri 2 runs the Next.js standalone server through a bundled Node sidecar,
+> keeps SQLite in the OS app-data directory, and configures the Gemini key
+> entirely from an in-app Settings dialog.
 
 ## Stack
 
@@ -19,12 +20,13 @@ synthesize the day into one calm, cited briefing.
 | AI | Google Gemini (`gemini-3.8-flash`) via `@google/genai` |
 | Reading | `react-markdown` + `remark-gfm` |
 | OPML | `fast-xml-parser` |
+| Desktop | Tauri 2 + a bundled Node sidecar |
 
 ## Quick start
 
 ```bash
 npm install
-cp .env.example .env           # add GEMINI_API_KEY for AI synthesis
+cp .env.example .env           # optional: add GEMINI_API_KEY for AI synthesis
 npm run db:setup               # apply migrations + seed 2 categories & 28 sources
 npm run dev
 ```
@@ -32,6 +34,8 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000). The page server-renders the
 latest articles and briefings, so a fresh database shows a guided setup state
 instead of an empty shell.
+
+Prefer a native window? Jump to [Desktop app (Tauri)](#desktop-app-tauri).
 
 ## The interface
 
@@ -62,7 +66,73 @@ at a time below the `lg` breakpoint.
 
 <img src="docs/screenshots/mobile.png" alt="Mobile live feed" width="320" />
 
-### Load today's news
+## Desktop app (Tauri)
+
+The same reader ships as a native Linux/Windows application. Tauri starts a
+bundled Node sidecar that runs the Next.js standalone server on a free loopback
+port, waits for `/api/health`, and opens a native window pointed at it. API
+routes, Drizzle migrations, and the `better-sqlite3` native module are preserved
+unchanged.
+
+- **Local data** lives outside the app bundle, in the OS app-data directory:
+  - Linux: `~/.local/share/com.dailydigest.desktop/digest.db`
+  - Windows: `%APPDATA%\com.dailydigest.desktop\digest.db`
+- **First launch** applies committed migrations and seeds the 28 starter sources
+  automatically. No terminal step is required.
+- **Gemini API key** is configured from the gear icon. It is stored in the local
+  database with owner-only permissions, masked in API responses, and tested with
+  a one-token pre-flight request. A key saved in Settings takes precedence over
+  `.env`.
+- **Links** open in the system browser, so the app never traps you in a bare
+  webview.
+- **Single instance** — launching the app again focuses the existing window
+  instead of starting a second SQLite writer.
+
+### Build locally
+
+Prerequisites: Rust (via rustup), Node 22, and the
+[Tauri system dependencies](https://v2.tauri.app/start/prerequisites/) for your
+OS. On Debian/Ubuntu:
+
+```bash
+sudo apt-get install libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
+  librsvg2-dev patchelf libgtk-3-dev build-essential
+```
+
+Then:
+
+```bash
+npm install
+npm run desktop:dev
+```
+
+`desktop:dev` builds the standalone runtime and starts Tauri. To produce
+installers:
+
+```bash
+# Linux: AppImage + .deb
+npm run desktop:build -- --bundles appimage,deb
+
+# Windows: NSIS installer (.exe)
+npm run desktop:build -- --bundles nsis
+```
+
+Under the hood, `npm run desktop:prepare` runs `next build`, copies
+`.next/static`, `public/` (when present), and `drizzle/` into
+`.next/standalone`, and places a self-contained Node executable at
+`src-tauri/binaries/digest-node-<target-triple>`. If the host Node is a thin
+wrapper around a shared `libnode`, the script downloads the official build for
+the same version. Sidecar binaries and Rust build output are gitignored.
+
+### Release workflow
+
+Push a tag such as `v0.2.0` and
+[`.github/workflows/release.yml`](.github/workflows/release.yml) builds on native
+Ubuntu 22.04 and Windows runners. It uploads the AppImage, `.deb`, and NSIS
+installer to a draft GitHub release with generated notes. The workflow syncs the
+tag version into `package.json` and `src-tauri/tauri.conf.json` before building.
+
+## Load today's news
 
 ```bash
 curl -X POST http://localhost:3000/api/feeds/sync
@@ -73,7 +143,9 @@ The sync endpoint fetches all active sources with bounded concurrency, records
 `lastFetchedAt`, and deduplicates by canonicalized URL. One broken source never
 aborts the batch — failures are returned in the report.
 
-To write a briefing, add your `GEMINI_API_KEY` to `.env`, restart, then:
+To write a briefing in the browser, open **Settings** (gear icon) and add your
+Gemini key, then click **Generate Your Read**. For scripted use, you can instead
+put `GEMINI_API_KEY` in `.env`, restart, and call:
 
 ```bash
 curl -X POST http://localhost:3000/api/briefings/generate \
@@ -95,6 +167,9 @@ The database lives at `data/digest.db` and is ignored by git.
 | `npm run db:generate` | Generate a migration after editing the schema |
 | `npm run db:push` | Push the schema directly to SQLite (prototyping) |
 | `npm run db:studio` | Open Drizzle Studio |
+| `npm run desktop:dev` | Build the standalone runtime and start the Tauri app |
+| `npm run desktop:build` | Build native installers with Tauri |
+| `npm run desktop:prepare` | Build/copy the standalone runtime and Node sidecar |
 | `npm run typecheck` | TypeScript, no emit |
 | `npm run lint` | ESLint |
 
@@ -111,6 +186,8 @@ src/
 │   │   ├── articles/              # Browse, search, bookmark
 │   │   ├── briefings/             # Latest briefing + generate
 │   │   ├── feeds/sync/            # RSS ingestion (POST + cron GET)
+│   │   ├── health/                # Sidecar readiness probe
+│   │   ├── settings/              # Gemini key/model + key test
 │   │   ├── sources/               # Source CRUD + OPML import/export
 │   │   └── stats/                 # Sidebar counters
 │   ├── globals.css                # Obsidian surfaces, frosted glass, type tokens
@@ -122,13 +199,17 @@ src/
 │   ├── FeedPanel.tsx              # Briefing/feed list, search, pagination
 │   ├── ReaderPanel.tsx            # Article and briefing reader
 │   ├── ManageSourcesModal.tsx     # Add, validate, toggle, delete, OPML
+│   ├── SettingsModal.tsx          # In-app Gemini key, test, and model
 │   └── Markdown.tsx               # GFM rendering with safe external links
 ├── db/
-│   ├── index.ts                   # SQLite connection (WAL, FKs, dev singleton)
-│   ├── schema.ts                  # categories · feeds · articles · briefings
-│   └── seed.ts                    # Idempotent seed with 28 curated sources
+│   ├── index.ts                   # SQLite connection (WAL, FKs, app-data path)
+│   ├── bootstrap.ts               # Runtime migrations + idempotent seed
+│   ├── starter-feeds.ts           # 28 curated sources
+│   ├── schema.ts                  # categories · feeds · articles · briefings · settings
+│   └── seed.ts                    # CLI wrapper around bootstrap
 ├── hooks/
 │   └── useDebouncedValue.ts       # Debounced search input
+├── instrumentation.ts             # Boots the DB before the server is ready
 └── lib/
     ├── briefing.ts                # Story selection, prompt, Gemini, citations
     ├── categories.ts              # Shared slugs, labels, category metadata
@@ -140,9 +221,12 @@ src/
     ├── opml.ts                    # OPML 2.0 build/parse
     ├── rss.ts                     # Fetch, normalize, dedupe, batch upsert
     ├── server-queries.ts          # Shared list/stats queries for SSR + API
+    ├── settings.ts                # Stored Gemini key, masking, precedence
     ├── text.ts                    # HTML cleanup, read time, XML escaping
     ├── types.ts                   # API DTOs shared by client and server
     └── url.ts                     # URL canonicalization
+scripts/                           # Standalone + Node sidecar preparation
+src-tauri/                         # Tauri shell and Rust sidecar supervisor
 drizzle/                           # Committed SQL migrations
 data/                              # Local SQLite database (gitignored)
 ```
@@ -156,6 +240,8 @@ data/                              # Local SQLite database (gitignored)
   backbone of cross-feed deduplication; `isBookmarked` powers the reading list.
 - **briefings** — Gemini-written markdown briefings with read time and source
   count.
+- **settings** — local key/value preferences. The Gemini API key and model are
+  stored here; key reads are masked before leaving the server.
 
 ## API
 
@@ -173,6 +259,10 @@ data/                              # Local SQLite database (gitignored)
 | `GET` | `/api/sources/opml` | Export all sources as OPML |
 | `POST` | `/api/sources/opml` | Import an OPML file (multipart `file` or raw XML) |
 | `GET` | `/api/stats` | Article, source, bookmark, and briefing counters |
+| `GET` | `/api/health` | Sidecar readiness probe (SQLite ping) |
+| `GET` | `/api/settings` | Gemini configuration with a masked key |
+| `PUT` | `/api/settings` | Save or clear the API key / editorial model |
+| `POST` | `/api/settings/test` | Validate a candidate key with a one-token request |
 
 Errors use a stable envelope:
 
@@ -207,7 +297,8 @@ Security.
 | Variable | Required | Description |
 | --- | --- | --- |
 | `DATABASE_URL` | No | SQLite path, default `./data/digest.db` |
-| `GEMINI_API_KEY` | For synthesis | Google AI Studio API key |
+| `DIGEST_DATA_DIR` | Desktop | OS app-data directory injected by Tauri; the DB is `<dir>/digest.db` |
+| `GEMINI_API_KEY` | For synthesis | Optional fallback; a key saved in Settings wins |
 | `GEMINI_MODEL` | No | Defaults to `gemini-3.8-flash` |
 | `CRON_SECRET` | No | Optional protection for ingestion/synthesis endpoints |
 | `SYNC_CONCURRENCY` | No | Parallel feed fetches, default `8` (max 50) |
@@ -252,3 +343,5 @@ SQLite file (or its volume snapshot) if you care about bookmarks.
 - [x] **Step 2** — RSS sync engine, deduplicator, Gemini briefing API
 - [x] **Step 3** — three-column Apple-style reader, sources manager UI, OPML controls
 - [x] **Step 4** — polished README, screenshots, deploy notes
+- [x] **Step 5** — Tauri 2 desktop app, app-data SQLite, in-app Gemini settings,
+  tag-driven Linux/Windows releases

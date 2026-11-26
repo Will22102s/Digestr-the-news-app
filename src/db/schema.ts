@@ -109,6 +109,19 @@ export const briefings = sqliteTable(
   ],
 );
 
+/**
+ * Small key/value store for local preferences that must survive restarts,
+ * such as the user's Gemini API key. Secrets are never sent back to the
+ * browser in plain text.
+ */
+export const settings = sqliteTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 // ---------------------------------------------------------------------------
 // Relations (used by Drizzle's relational queries in the API layer)
 // ---------------------------------------------------------------------------
@@ -149,4 +162,6 @@ export type Article = typeof articles.$inferSelect;
 export type NewArticle = typeof articles.$inferInsert;
 export type Briefing = typeof briefings.$inferSelect;
 export type NewBriefing = typeof briefings.$inferInsert;
+export type Setting = typeof settings.$inferSelect;
+export type NewSetting = typeof settings.$inferInsert;
 export type SourceType = Feed["sourceType"];

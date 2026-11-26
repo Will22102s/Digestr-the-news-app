@@ -82,6 +82,26 @@ export type StatsDTO = {
   lastSyncedAt: string | null;
 };
 
+export type CredentialSource = "database" | "environment" | null;
+
+export type SettingsDTO = {
+  gemini: {
+    configured: boolean;
+    maskedKey: string | null;
+    source: CredentialSource;
+    model: string;
+    modelSource: "database" | "environment" | "default";
+  };
+};
+
+export type SettingsTestResponse = {
+  ok: true;
+  model: string;
+  reply: string;
+  maskedKey: string;
+  source: "database" | "environment" | "candidate";
+};
+
 export type SyncReport = {
   feedsAttempted: number;
   feedsSucceeded: number;

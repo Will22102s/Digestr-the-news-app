@@ -5,6 +5,7 @@ import {
   Layers,
   Newspaper,
   RefreshCw,
+  Settings,
   Settings2,
   Sparkles,
   X,
@@ -33,6 +34,7 @@ type SidebarProps = {
   syncing: boolean;
   onSync: () => void;
   onOpenSources: () => void;
+  onOpenSettings: () => void;
   onClose?: () => void;
   className?: string;
 };
@@ -67,6 +69,7 @@ export function Sidebar({
   syncing,
   onSync,
   onOpenSources,
+  onOpenSettings,
   onClose,
   className,
 }: SidebarProps) {
@@ -221,6 +224,16 @@ export function Sidebar({
           <span className="ml-auto text-[10.5px] tabular-nums text-ink-tertiary">
             {counts.sources}
           </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onOpenSettings}
+          className="mt-1 flex w-full items-center gap-2 rounded-[10px] px-2.5 py-2 text-[12px] font-medium text-ink-secondary transition hover:bg-white/[0.04] hover:text-ink"
+        >
+          <Settings className="size-3.5 text-ink-tertiary" strokeWidth={1.9} />
+          Settings
+          <span className="ml-auto text-[10px] text-ink-tertiary">API key</span>
         </button>
 
         <p className="mt-2.5 px-1 text-[10.5px] leading-relaxed text-ink-tertiary">

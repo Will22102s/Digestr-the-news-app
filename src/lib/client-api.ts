@@ -3,6 +3,8 @@ import type {
   BriefingDTO,
   BriefingsResponse,
   GenerateBriefingResponse,
+  SettingsDTO,
+  SettingsTestResponse,
   SourceDTO,
   SourcesResponse,
   StatsDTO,
@@ -22,7 +24,7 @@ export class ApiClientError extends Error {
 }
 
 type RequestOptions = {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   signal?: AbortSignal;
 };
@@ -185,6 +187,30 @@ export function syncFeeds(): Promise<SyncReport> {
 
 export function getStats(): Promise<StatsDTO> {
   return request<StatsDTO>("/api/stats");
+}
+
+export function getSettings(): Promise<SettingsDTO> {
+  return request<SettingsDTO>("/api/settings");
+}
+
+export function updateSettings(input: {
+  geminiApiKey?: string | null;
+  geminiModel?: string | null;
+}): Promise<SettingsDTO> {
+  return request<SettingsDTO>("/api/settings", {
+    method: "PUT",
+    body: input,
+  });
+}
+
+export function testGeminiKey(input: {
+  geminiApiKey?: string;
+  geminiModel?: string;
+}): Promise<SettingsTestResponse> {
+  return request<SettingsTestResponse>("/api/settings/test", {
+    method: "POST",
+    body: input,
+  });
 }
 
 export type { BriefingDTO };

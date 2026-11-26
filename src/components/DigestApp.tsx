@@ -7,10 +7,12 @@ import {
   Menu,
   Newspaper,
   RefreshCw,
+  Settings,
   X,
 } from "lucide-react";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
+  ApiClientError,
   generateBriefing,
   getArticles,
   getStats,
@@ -28,6 +30,7 @@ import type {
 import { FeedPanel } from "./FeedPanel";
 import { ManageSourcesModal } from "./ManageSourcesModal";
 import { ReaderPanel } from "./ReaderPanel";
+import { SettingsModal } from "./SettingsModal";
 import { Sidebar } from "./Sidebar";
 
 export type InitialDigestData = {
@@ -80,6 +83,7 @@ export function DigestApp({ initial }: DigestAppProps) {
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"list" | "reader">("list");
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -334,6 +338,13 @@ export function DigestApp({ initial }: DigestAppProps) {
       const message = messageFrom(cause);
       setGenerationError(message);
       showToast(message, "error");
+
+      if (
+        cause instanceof ApiClientError &&
+        cause.code === "GEMINI_KEY_MISSING"
+      ) {
+        setSettingsOpen(true);
+      }
     } finally {
       setGenerating(false);
     }
@@ -406,6 +417,10 @@ export function DigestApp({ initial }: DigestAppProps) {
         setSourcesOpen(true);
         setDrawerOpen(false);
       }}
+      onOpenSettings={() => {
+        setSettingsOpen(true);
+        setDrawerOpen(false);
+      }}
       onClose={() => setDrawerOpen(false)}
       className={className}
     />
@@ -448,10 +463,19 @@ export function DigestApp({ initial }: DigestAppProps) {
 
           <button
             type="button"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Open settings"
+            className="ml-auto grid size-8 place-items-center rounded-lg border border-hairline bg-white/[0.03] text-ink-secondary transition hover:bg-white/[0.06] hover:text-ink"
+          >
+            <Settings className="size-3.5" strokeWidth={2} />
+          </button>
+
+          <button
+            type="button"
             onClick={() => void handleSync()}
             disabled={syncing}
             aria-label="Sync feeds"
-            className="ml-auto grid size-8 place-items-center rounded-lg border border-hairline bg-white/[0.03] text-ink-secondary transition hover:bg-white/[0.06] hover:text-ink disabled:opacity-60"
+            className="grid size-8 place-items-center rounded-lg border border-hairline bg-white/[0.03] text-ink-secondary transition hover:bg-white/[0.06] hover:text-ink disabled:opacity-60"
           >
             <RefreshCw
               className={cn("size-3.5", syncing && "animate-spin")}
@@ -524,6 +548,16 @@ export function DigestApp({ initial }: DigestAppProps) {
         onChanged={handleSourcesChanged}
         onToast={showToast}
       />
+
+      {settingsOpen ? (
+        <SettingsModal
+          onClose={() => setSettingsOpen(false)}
+          onSaved={() => {
+            setGenerationError(null);
+          }}
+          onToast={showToast}
+        />
+      ) : null}
 
       {toast ? (
         <div className="pointer-events-none fixed inset-x-0 bottom-5 z-[70] flex justify-center px-4">

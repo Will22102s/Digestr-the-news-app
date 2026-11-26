@@ -6,6 +6,10 @@ import type { CategoryFilter } from "./categories";
 import { dedupeByTitle } from "./dedupe";
 import { AppError } from "./errors";
 import {
+  DEFAULT_GEMINI_MODEL,
+  getGeminiCredentials,
+} from "./settings";
+import {
   countWords,
   estimateReadTimeMinutes,
   formatPublishedDate,
@@ -14,7 +18,6 @@ import {
 } from "./text";
 import { canonicalizeArticleUrl } from "./url";
 
-const DEFAULT_MODEL = "gemini-3.8-flash";
 const DEFAULT_MAX_ARTICLES = 30;
 const MIN_ARTICLES = 4;
 const RECENCY_WINDOW_HOURS = 72;
@@ -351,6 +354,52 @@ function getGeminiClient(apiKey: string): GoogleGenAI {
 }
 
 /**
+ * Cheap pre-flight used by the settings modal. Validates the key and the
+ * selected model together with a one-token request.
+ */
+export async function testGeminiConnection(
+  apiKey: string,
+  model: string,
+): Promise<{ model: string; reply: string }> {
+  const client = getGeminiClient(apiKey);
+
+  try {
+    const response = await client.models.generateContent({
+      model,
+      contents: "Reply with the single word OK.",
+      config: { maxOutputTokens: 8, temperature: 0 },
+    });
+
+    return { model, reply: response.text?.trim() || "OK" };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown Gemini API error.";
+    const normalized = message.toLowerCase();
+
+    let friendly = truncateAtWord(message, 280);
+    if (
+      normalized.includes("api key not valid") ||
+      normalized.includes("api_key_invalid")
+    ) {
+      friendly =
+        "That API key was rejected by Google. Check it and try again.";
+    } else if (
+      normalized.includes("not found") ||
+      normalized.includes("not supported")
+    ) {
+      friendly = `The model “${model}” is not available to this key. Try ${DEFAULT_GEMINI_MODEL}.`;
+    }
+
+    throw new AppError(
+      400,
+      friendly,
+      "GEMINI_TEST_FAILED",
+      { model },
+    );
+  }
+}
+
+/**
  * Gather, deduplicate, synthesize, and persist one editorial briefing.
  */
 export async function generateBriefing(
@@ -368,16 +417,14 @@ export async function generateBriefing(
     );
   }
 
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  const { apiKey, model } = getGeminiCredentials();
   if (!apiKey) {
     throw new AppError(
       503,
-      "GEMINI_API_KEY is not configured. Add it to .env and restart the server.",
+      "No Gemini API key is configured. Open Settings and add one to write a briefing.",
       "GEMINI_KEY_MISSING",
     );
   }
-
-  const model = process.env.GEMINI_MODEL?.trim() || DEFAULT_MODEL;
   const { systemInstruction, prompt } = buildEditorialPrompt(
     sources,
     categorySlug,
