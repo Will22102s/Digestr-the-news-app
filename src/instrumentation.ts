@@ -10,13 +10,18 @@ export async function register(): Promise<void> {
   const { bootstrapDatabase } = await import("./db/bootstrap");
   const report = await bootstrapDatabase();
 
+  const demo =
+    report.demoArticles > 0
+      ? ` · demo library ${report.demoArticles} stories / ${report.demoBriefings} briefings`
+      : "";
+
   if (report.skippedSeed) {
     console.log(
-      `[digest] database ready · ${report.totalFeeds} sources · ${report.databasePath}`,
+      `[digest] database ready · ${report.totalFeeds} sources${demo} · ${report.databasePath}`,
     );
   } else {
     console.log(
-      `[digest] database initialized · ${report.seededFeeds} starter sources · ${report.databasePath}`,
+      `[digest] database initialized · ${report.seededFeeds} starter sources${demo} · ${report.databasePath}`,
     );
   }
 }

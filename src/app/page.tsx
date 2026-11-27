@@ -33,7 +33,7 @@ function SetupScreen({ message }: { message: string | null }) {
         </div>
         <div>
           <p className="text-[15px] font-semibold tracking-[-0.02em]">
-            The Daily Digest
+            Digestr
           </p>
           <p className="text-[11.5px] text-ink-tertiary">
             AI &amp; Cybersecurity, edited for you

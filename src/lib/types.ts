@@ -11,6 +11,7 @@ export type ArticleDTO = {
   snippet: string;
   publishedAt: string;
   isBookmarked: boolean;
+  isDemo: boolean;
   feedId: number;
   feedName: string;
   sourceType: SourceType;
@@ -26,6 +27,8 @@ export type BriefingDTO = {
   contentMarkdown: string;
   readTimeMinutes: number;
   articleCount: number;
+  provider: string;
+  isDemo: boolean;
   createdAt: string;
 };
 
@@ -63,6 +66,9 @@ export type SourcesResponse = {
   total: number;
 };
 
+export type AiProviderId = "gemini" | "groq" | "ollama" | "fallback";
+export type AiProviderChoice = "auto" | AiProviderId;
+
 export type GenerateBriefingResponse = {
   briefing: BriefingDTO;
   sources: Array<{
@@ -72,6 +78,14 @@ export type GenerateBriefingResponse = {
     sourceName: string;
     publishedAt: string;
   }>;
+  provider: AiProviderId | "demo";
+  notice?: string;
+};
+
+export type DemoStatusDTO = {
+  active: boolean;
+  articles: number;
+  briefings: number;
 };
 
 export type StatsDTO = {
@@ -80,26 +94,50 @@ export type StatsDTO = {
   briefings: number;
   sources: { total: number; active: number };
   lastSyncedAt: string | null;
+  demo: DemoStatusDTO;
+  ai: {
+    provider: AiProviderChoice;
+    effectiveProvider: AiProviderId;
+    configured: boolean;
+  };
 };
 
 export type CredentialSource = "database" | "environment" | null;
 
+export type ProviderStatusDTO = {
+  configured: boolean;
+  maskedKey: string | null;
+  source: CredentialSource;
+  model: string;
+  modelSource: "database" | "environment" | "default";
+};
+
+export type OllamaStatusDTO = {
+  enabled: boolean;
+  baseUrl: string;
+  baseUrlSource: "database" | "environment" | "default";
+  model: string;
+  modelSource: "database" | "environment" | "default";
+  configured: boolean;
+};
+
 export type SettingsDTO = {
-  gemini: {
-    configured: boolean;
-    maskedKey: string | null;
-    source: CredentialSource;
-    model: string;
-    modelSource: "database" | "environment" | "default";
+  ai: {
+    provider: AiProviderChoice;
+    effectiveProvider: AiProviderId;
+    gemini: ProviderStatusDTO;
+    groq: ProviderStatusDTO;
+    ollama: OllamaStatusDTO;
   };
+  demo: DemoStatusDTO;
 };
 
 export type SettingsTestResponse = {
   ok: true;
+  provider: AiProviderId;
   model: string;
   reply: string;
-  maskedKey: string;
-  source: "database" | "environment" | "candidate";
+  maskedKey: string | null;
 };
 
 export type SyncReport = {

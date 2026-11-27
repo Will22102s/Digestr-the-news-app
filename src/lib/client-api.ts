@@ -1,7 +1,9 @@
 import type {
+  AiProviderChoice,
   ArticlesResponse,
   BriefingDTO,
   BriefingsResponse,
+  DemoStatusDTO,
   GenerateBriefingResponse,
   SettingsDTO,
   SettingsTestResponse,
@@ -194,8 +196,14 @@ export function getSettings(): Promise<SettingsDTO> {
 }
 
 export function updateSettings(input: {
+  aiProvider?: AiProviderChoice;
   geminiApiKey?: string | null;
   geminiModel?: string | null;
+  groqApiKey?: string | null;
+  groqModel?: string | null;
+  ollamaEnabled?: boolean;
+  ollamaBaseUrl?: string | null;
+  ollamaModel?: string | null;
 }): Promise<SettingsDTO> {
   return request<SettingsDTO>("/api/settings", {
     method: "PUT",
@@ -203,14 +211,29 @@ export function updateSettings(input: {
   });
 }
 
-export function testGeminiKey(input: {
-  geminiApiKey?: string;
-  geminiModel?: string;
+export function testAiProvider(input: {
+  provider: "gemini" | "groq" | "ollama" | "fallback";
+  apiKey?: string;
+  model?: string;
+  baseUrl?: string;
 }): Promise<SettingsTestResponse> {
   return request<SettingsTestResponse>("/api/settings/test", {
     method: "POST",
     body: input,
   });
+}
+
+export function resetDemoData(
+  action: "reset" | "load" | "clear" = "reset",
+): Promise<{ demo: DemoStatusDTO }> {
+  return request<{ demo: DemoStatusDTO }>("/api/demo", {
+    method: "POST",
+    body: { action },
+  });
+}
+
+export function getDemoStatus(): Promise<{ demo: DemoStatusDTO }> {
+  return request<{ demo: DemoStatusDTO }>("/api/demo");
 }
 
 export type { BriefingDTO };

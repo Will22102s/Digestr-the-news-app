@@ -110,6 +110,11 @@ function ArticleCard({
           <span className="shrink-0">
             {formatRelativeTime(article.publishedAt)}
           </span>
+          {article.isDemo ? (
+            <span className="shrink-0 rounded-full border border-amber-400/25 bg-amber-400/[0.07] px-1.5 py-px text-[9px] font-medium text-amber-300">
+              Demo
+            </span>
+          ) : null}
         </div>
 
         <h3
@@ -193,6 +198,11 @@ function BriefingCard({
         <span className="font-medium normal-case tracking-normal text-ink-tertiary">
           {categoryLabel}
         </span>
+        {briefing.isDemo ? (
+          <span className="rounded-full border border-amber-400/25 bg-amber-400/[0.07] px-1.5 py-px text-[9px] font-medium normal-case tracking-normal text-amber-300">
+            Sample
+          </span>
+        ) : null}
       </div>
 
       <h3

@@ -72,6 +72,10 @@ export const articles = sqliteTable(
     isBookmarked: integer("is_bookmarked", { mode: "boolean" })
       .notNull()
       .default(false),
+    /** True for the sample library that ships with a fresh install. */
+    isDemo: integer("is_demo", { mode: "boolean" })
+      .notNull()
+      .default(false),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
@@ -81,6 +85,7 @@ export const articles = sqliteTable(
     index("articles_category_id_idx").on(table.categoryId),
     index("articles_feed_id_idx").on(table.feedId),
     index("articles_is_bookmarked_idx").on(table.isBookmarked),
+    index("articles_is_demo_idx").on(table.isDemo),
   ],
 );
 
@@ -97,6 +102,12 @@ export const briefings = sqliteTable(
     contentMarkdown: text("content_markdown").notNull(),
     readTimeMinutes: integer("read_time_minutes").notNull().default(0),
     articleCount: integer("article_count").notNull().default(0),
+    /** gemini | groq | ollama | fallback | demo */
+    provider: text("provider").notNull().default("gemini"),
+    /** True for the pre-generated sample briefings. */
+    isDemo: integer("is_demo", { mode: "boolean" })
+      .notNull()
+      .default(false),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
@@ -106,6 +117,7 @@ export const briefings = sqliteTable(
       table.categorySlug,
       table.createdAt,
     ),
+    index("briefings_is_demo_idx").on(table.isDemo),
   ],
 );
 

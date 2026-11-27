@@ -98,7 +98,7 @@ export function Sidebar({
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13.5px] font-semibold tracking-[-0.02em] text-ink">
-            The Daily Digest
+            Digestr
           </p>
           <p className="truncate text-[10.5px] text-ink-tertiary">
             AI &amp; Cybersecurity

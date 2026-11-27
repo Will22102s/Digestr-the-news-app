@@ -38,6 +38,14 @@ function briefingDesk(slug: string): string {
   return "All desks";
 }
 
+function providerLabel(provider: string): string {
+  if (provider === "gemini") return "Google Gemini";
+  if (provider === "groq") return "Groq";
+  if (provider === "ollama") return "Ollama";
+  if (provider === "demo") return "the Digestr demo desk";
+  return "the built-in algorithmic editor";
+}
+
 function IconButton({
   label,
   onClick,
@@ -198,6 +206,11 @@ export function ReaderPanel({
                 <span className="rounded-full border border-hairline bg-white/[0.03] px-2.5 py-1 text-[10.5px] font-medium text-ink-secondary">
                   {briefingDesk(briefing.categorySlug)}
                 </span>
+                {briefing.isDemo ? (
+                  <span className="rounded-full border border-amber-400/25 bg-amber-400/[0.07] px-2.5 py-1 text-[10.5px] font-medium text-amber-300">
+                    Sample
+                  </span>
+                ) : null}
               </div>
 
               <h1 className="mt-4 text-balance font-serif text-[30px] font-medium leading-[1.14] tracking-[-0.025em] text-ink sm:text-[38px]">
@@ -220,8 +233,10 @@ export function ReaderPanel({
               <Markdown className="mt-7">{briefing.contentMarkdown}</Markdown>
 
               <div className="mt-10 rounded-xl border border-hairline bg-white/[0.02] px-4 py-3 text-[11px] leading-relaxed text-ink-tertiary">
-                Synthesized by Gemini from {briefing.articleCount} stories.
-                AI summaries can be wrong — follow the citations to the primary
+                {briefing.isDemo
+                  ? "A sample briefing bundled with Digestr."
+                  : `Synthesized with ${providerLabel(briefing.provider)} from ${briefing.articleCount} stories.`}{" "}
+                Summaries can be wrong — follow the citations to the primary
                 reporting.
               </div>
             </article>
@@ -256,6 +271,11 @@ export function ReaderPanel({
               <span className="text-[10.5px] text-ink-tertiary">
                 {sourceTypeLabel(article.sourceType)}
               </span>
+              {article.isDemo ? (
+                <span className="rounded-full border border-amber-400/25 bg-amber-400/[0.07] px-2 py-0.5 text-[10px] font-medium text-amber-300">
+                  Demo story
+                </span>
+              ) : null}
             </div>
 
             <h1 className="mt-4 text-balance font-serif text-[29px] font-medium leading-[1.16] tracking-[-0.02em] text-ink sm:text-[37px]">
@@ -285,7 +305,7 @@ export function ReaderPanel({
 
             <div className="mt-8 rounded-2xl border border-hairline bg-white/[0.025] p-4">
               <p className="text-[11.5px] leading-relaxed text-ink-secondary">
-                The Daily Digest stores the headline and summary from the feed.
+                Digestr stores the headline and summary from the feed.
                 Continue to {hostnameFromUrl(article.url)} for the complete
                 story.
               </p>

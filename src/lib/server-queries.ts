@@ -1,7 +1,9 @@
 import { and, count, desc, eq, like, max, or, type SQL } from "drizzle-orm";
 import { db } from "@/db";
+import { getDemoStatus } from "@/db/demo-data";
 import { articles, briefings, categories, feeds } from "@/db/schema";
 import type { CategoryFilter } from "./categories";
+import { getAiSettings } from "./settings";
 import type { ArticleDTO, BriefingDTO, StatsDTO } from "./types";
 
 const articleSelection = {
@@ -11,6 +13,7 @@ const articleSelection = {
   snippet: articles.snippet,
   publishedAt: articles.publishedAt,
   isBookmarked: articles.isBookmarked,
+  isDemo: articles.isDemo,
   feedId: feeds.id,
   feedName: feeds.name,
   sourceType: feeds.sourceType,
@@ -156,6 +159,7 @@ export async function getDigestStats(): Promise<StatsDTO> {
   const ai = counts.get("AI") ?? 0;
   const cybersec = counts.get("CYBERSEC") ?? 0;
   const lastSyncedAt = syncRow[0]?.value;
+  const aiSettings = getAiSettings();
 
   return {
     articles: { all: ai + cybersec, ai, cybersec },
@@ -168,5 +172,11 @@ export async function getDigestStats(): Promise<StatsDTO> {
     lastSyncedAt: lastSyncedAt
       ? new Date(lastSyncedAt).toISOString()
       : null,
+    demo: getDemoStatus(),
+    ai: {
+      provider: aiSettings.provider,
+      effectiveProvider: aiSettings.effectiveProvider,
+      configured: aiSettings.effectiveProvider !== "fallback",
+    },
   };
 }

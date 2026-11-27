@@ -1,5 +1,5 @@
 {
-  "name": "the-daily-digest",
+  "name": "digestr",
   "version": "0.1.0",
   "private": true,
   "description": "A minimalist, Apple-style daily reader for AI and cybersecurity news.",
@@ -21,6 +21,9 @@
   },
   "dependencies": {
     "@google/genai": "^3.6.1",
+    "@tauri-apps/api": "^2.12.5",
+    "@tauri-apps/plugin-process": "^2.4.0",
+    "@tauri-apps/plugin-updater": "^2.14.1",
     "better-sqlite3": "^13.2.0",
     "drizzle-orm": "^0.45.4",
     "fast-xml-parser": "^5.12.1",

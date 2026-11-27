@@ -2,6 +2,7 @@ import path from "node:path";
 import { count } from "drizzle-orm";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { CATEGORY_DEFINITIONS } from "../lib/categories";
+import { seedDemoDataIfNeeded } from "./demo-data";
 import { db, databasePath } from "./index";
 import { categories, feeds } from "./schema";
 import { SEED_FEEDS } from "./starter-feeds";
@@ -12,6 +13,8 @@ export type BootstrapReport = {
   seededFeeds: number;
   totalFeeds: number;
   skippedSeed: boolean;
+  demoArticles: number;
+  demoBriefings: number;
 };
 
 /**
@@ -41,42 +44,45 @@ export async function bootstrapDatabase(
     db.select({ value: count() }).from(feeds).get()?.value ?? 0,
   );
 
-  if (existingFeedCount > 0 && !options.forceSeed) {
-    return {
-      databasePath,
-      categories: categoryRows.length,
-      seededFeeds: 0,
-      totalFeeds: existingFeedCount,
-      skippedSeed: true,
-    };
+  let seededFeeds = 0;
+  const skippedSeed = existingFeedCount > 0 && !options.forceSeed;
+
+  if (!skippedSeed) {
+    const categoryIdBySlug = new Map(
+      categoryRows.map((category) => [category.slug, category.id]),
+    );
+
+    const feedRows = SEED_FEEDS.map((feed) => {
+      const categoryId = categoryIdBySlug.get(feed.category);
+
+      if (!categoryId) {
+        throw new Error(
+          `Missing category "${feed.category}" while seeding feeds.`,
+        );
+      }
+
+      return {
+        categoryId,
+        name: feed.name,
+        url: feed.url,
+        sourceType: feed.sourceType,
+        isActive: true,
+      };
+    });
+
+    const inserted = db
+      .insert(feeds)
+      .values(feedRows)
+      .onConflictDoNothing({ target: feeds.url })
+      .returning({ id: feeds.id })
+      .all();
+
+    seededFeeds = inserted.length;
   }
 
-  const categoryIdBySlug = new Map(
-    categoryRows.map((category) => [category.slug, category.id]),
-  );
-
-  const feedRows = SEED_FEEDS.map((feed) => {
-    const categoryId = categoryIdBySlug.get(feed.category);
-
-    if (!categoryId) {
-      throw new Error(`Missing category "${feed.category}" while seeding feeds.`);
-    }
-
-    return {
-      categoryId,
-      name: feed.name,
-      url: feed.url,
-      sourceType: feed.sourceType,
-      isActive: true,
-    };
-  });
-
-  const inserted = db
-    .insert(feeds)
-    .values(feedRows)
-    .onConflictDoNothing({ target: feeds.url })
-    .returning({ id: feeds.id })
-    .all();
+  // A first boot should be readable even without an API key or a network
+  // connection, so fill an empty library with the sample desk.
+  const demo = seedDemoDataIfNeeded();
 
   const totalFeeds = Number(
     db.select({ value: count() }).from(feeds).get()?.value ?? 0,
@@ -85,8 +91,10 @@ export async function bootstrapDatabase(
   return {
     databasePath,
     categories: categoryRows.length,
-    seededFeeds: inserted.length,
+    seededFeeds,
     totalFeeds,
-    skippedSeed: false,
+    skippedSeed,
+    demoArticles: demo.articles,
+    demoBriefings: demo.briefings,
   };
 }

@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { clearDemoData } from "@/db/demo-data";
 import { normalizeCategoryFilter } from "@/lib/categories";
 import { AppError } from "@/lib/errors";
 import {
@@ -85,6 +86,9 @@ export async function POST(request: NextRequest) {
       }),
     );
 
+    // Once real coverage arrives, the sample desk has done its job.
+    if (report.articlesInserted > 0) clearDemoData();
+
     return ok(report);
   } catch (error) {
     return errorResponse(error);
@@ -104,6 +108,8 @@ export async function GET(request: NextRequest) {
         concurrency: params.get("concurrency") ?? undefined,
       }),
     );
+
+    if (report.articlesInserted > 0) clearDemoData();
 
     return ok(report);
   } catch (error) {

@@ -3,13 +3,13 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "The Daily Digest — AI & Cybersecurity, edited for you",
-    template: "%s · The Daily Digest",
+    default: "Digestr — AI & Cybersecurity, edited for you",
+    template: "%s · Digestr",
   },
   description:
     "A minimalist daily reader for artificial intelligence and cybersecurity. Browse live headlines or generate one calm, cited briefing.",
-  applicationName: "The Daily Digest",
-  authors: [{ name: "The Daily Digest" }],
+  applicationName: "Digestr",
+  authors: [{ name: "Digestr" }],
   keywords: [
     "AI news",
     "cybersecurity news",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     "daily digest",
   ],
   openGraph: {
-    title: "The Daily Digest",
+    title: "Digestr",
     description:
       "One calm, cited briefing for AI and cybersecurity — or browse the live feed.",
     type: "website",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   colorScheme: "dark",
-  themeColor: "#111214",
+  themeColor: "#111215",
 };
 
 export default function RootLayout({

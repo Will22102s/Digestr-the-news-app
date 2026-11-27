@@ -32,7 +32,7 @@ export async function GET() {
       headers: {
         "Content-Type": "application/xml; charset=utf-8",
         "Content-Disposition":
-          'attachment; filename="daily-digest-sources.opml"',
+          'attachment; filename="digestr-sources.opml"',
         "Cache-Control": "no-store",
       },
     });

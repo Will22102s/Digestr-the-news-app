@@ -183,7 +183,7 @@ export function buildOpml(
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<opml version="2.0">',
     "  <head>",
-    "    <title>The Daily Digest — Sources</title>",
+    "    <title>Digestr — Sources</title>",
     `    <dateCreated>${new Date().toUTCString()}</dateCreated>`,
     "  </head>",
     "  <body>",

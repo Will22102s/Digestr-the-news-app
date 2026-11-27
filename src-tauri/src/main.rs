@@ -35,6 +35,8 @@ fn main() {
         }))
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             let handle = app.handle().clone();
 
@@ -59,10 +61,11 @@ fn main() {
                 "main",
                 WebviewUrl::App("index.html".into()),
             )
-            .title("The Daily Digest")
-            .inner_size(1280.0, 860.0)
-            .min_inner_size(1000.0, 700.0)
+            .title("Digestr")
+            .inner_size(1280.0, 820.0)
+            .min_inner_size(960.0, 640.0)
             .background_color(tauri::window::Color(17, 18, 21, 255))
+            .theme(Some(tauri::Theme::Dark))
             .visible(false)
             .center()
             .on_navigation(|url| {
@@ -159,7 +162,7 @@ fn main() {
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("error while building The Daily Digest");
+        .expect("error while building Digestr");
 
     app.run(|app_handle, event| {
         if let RunEvent::Exit = event {
@@ -269,7 +272,7 @@ fn show_startup_error(window: &tauri::WebviewWindow, message: &str) {
         "document.body.style.fontFamily = '-apple-system, BlinkMacSystemFont, sans-serif';",
         "document.body.style.padding = '48px';",
         "document.body.innerHTML = '<h1 style=\"font-size:20px;margin:0 0 14px\">",
-        "The Daily Digest could not start</h1><pre style=\"white-space:pre-wrap;",
+        "Digestr could not start</h1><pre style=\"white-space:pre-wrap;",
         "color:#a1a1a6;font-size:12px;line-height:1.6;margin:0\"></pre>';",
         "document.querySelector('pre').textContent = ",
     )

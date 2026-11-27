@@ -8,7 +8,7 @@ async function seed(): Promise<void> {
   const force = process.argv.includes("--force");
   const report = await bootstrapDatabase({ forceSeed: force });
 
-  console.log(`\n  The Daily Digest — database setup\n  ${report.databasePath}\n`);
+  console.log(`\n  Digestr — database setup\n  ${report.databasePath}\n`);
 
   if (report.skippedSeed) {
     console.log(
@@ -27,6 +27,11 @@ async function seed(): Promise<void> {
     ).length;
     console.log(
       `    ${definition.slug.padEnd(9)} ${String(sourceCount).padStart(2)} starter sources`,
+    );
+  }
+  if (report.demoArticles > 0) {
+    console.log(
+      `    Demo Mode  ${report.demoArticles} sample stories · ${report.demoBriefings} briefings`,
     );
   }
   console.log(

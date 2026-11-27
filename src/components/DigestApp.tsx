@@ -8,11 +8,11 @@ import {
   Newspaper,
   RefreshCw,
   Settings,
+  Sparkles,
   X,
 } from "lucide-react";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
-  ApiClientError,
   generateBriefing,
   getArticles,
   getStats,
@@ -333,18 +333,16 @@ export function DigestApp({ initial }: DigestAppProps) {
         ...previous,
         briefings: previous.briefings + 1,
       }));
-      showToast("Your daily read is ready.");
+      showToast(
+        response.notice ??
+          (response.provider === "fallback"
+            ? "Your read is ready — assembled by the built-in editor."
+            : "Your daily read is ready."),
+      );
     } catch (cause) {
       const message = messageFrom(cause);
       setGenerationError(message);
       showToast(message, "error");
-
-      if (
-        cause instanceof ApiClientError &&
-        cause.code === "GEMINI_KEY_MISSING"
-      ) {
-        setSettingsOpen(true);
-      }
     } finally {
       setGenerating(false);
     }
@@ -395,6 +393,48 @@ export function DigestApp({ initial }: DigestAppProps) {
     }
     setRefreshKey((previous) => previous + 1);
   }, []);
+
+  const handleSettingsSaved = useCallback(async () => {
+    setGenerationError(null);
+    try {
+      setStats(await getStats());
+    } catch {
+      // The next page load will reconcile the banner.
+    }
+  }, []);
+
+  // A quiet background update check on desktop launch. Failures are expected
+  // in development and on a fresh checkout, so they never surface.
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      !("__TAURI_INTERNALS__" in (window as Window))
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      import("@tauri-apps/plugin-updater")
+        .then(({ check }) => check())
+        .then((update) => {
+          if (!cancelled && update) {
+            showToast(
+              `Digestr ${update.version} is available. Open Settings to install it.`,
+            );
+            void update.close();
+          }
+        })
+        .catch(() => {
+          // Offline or no published release yet.
+        });
+    }, 4_000);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [showToast]);
 
   const sidebar = (className?: string) => (
     <Sidebar
@@ -453,7 +493,7 @@ export function DigestApp({ initial }: DigestAppProps) {
             </div>
             <div className="min-w-0">
               <p className="truncate text-[12.5px] font-semibold tracking-[-0.02em]">
-                The Daily Digest
+                Digestr
               </p>
               <p className="truncate text-[9.5px] text-ink-tertiary">
                 {stats.articles.all} stories · {stats.sources.active} sources
@@ -483,6 +523,29 @@ export function DigestApp({ initial }: DigestAppProps) {
             />
           </button>
         </div>
+
+        {stats.demo.active ? (
+          <div className="mx-1 flex items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/[0.05] px-3 py-2 text-[11px] text-ink-secondary">
+            <Sparkles
+              className="size-3.5 shrink-0 text-amber-300"
+              strokeWidth={2.2}
+            />
+            <p className="min-w-0 flex-1">
+              <span className="font-semibold text-amber-200">Demo Mode</span>
+              <span className="text-ink-tertiary"> — </span>
+              {stats.ai.configured
+                ? "sample stories are on screen. Sync feeds for live coverage."
+                : "Add an API key in Settings for live AI synthesis."}
+            </p>
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(true)}
+              className="shrink-0 rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-2 py-1 text-[10.5px] font-medium text-amber-200 transition hover:bg-amber-400/[0.12]"
+            >
+              Settings
+            </button>
+          </div>
+        ) : null}
 
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 sm:gap-3 lg:grid-cols-[252px_minmax(320px,400px)_minmax(0,1fr)]">
           {sidebar("hidden lg:flex")}
@@ -552,9 +615,7 @@ export function DigestApp({ initial }: DigestAppProps) {
       {settingsOpen ? (
         <SettingsModal
           onClose={() => setSettingsOpen(false)}
-          onSaved={() => {
-            setGenerationError(null);
-          }}
+          onSaved={() => void handleSettingsSaved()}
           onToast={showToast}
         />
       ) : null}
